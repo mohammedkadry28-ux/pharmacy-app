@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <!-- 🚀 منع الكاش نهائياً لجلب أحدث تعديل أوتوماتيكياً فوراً -->
+    <!-- 🚀 منع الكاش نهائياً لجلب أحدث تعديل فوراً -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -81,9 +81,9 @@
                 </div>
             </div>
             
-            <button onclick="refreshAllAppData()" class="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md flex items-center justify-center gap-2 shrink-0">
-                <i class="fa-solid fa-rotate text-xs"></i>
-                <span>تحديث المزامنة</span>
+            <button onclick="forceFullAppRefresh()" class="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md flex items-center justify-center gap-2 shrink-0 active:scale-95 transition">
+                <i class="fa-solid fa-rotate text-xs" id="btn-refresh-icon"></i>
+                <span id="btn-refresh-text">تحديث المزامنة والكود</span>
             </button>
         </div>
 
@@ -135,7 +135,7 @@
                     <span id="cart-count-badge" class="absolute -top-1.5 -right-1.5 bg-amber-500 text-slate-900 text-[10px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center border-2 border-slate-900">0</span>
                 </div>
                 <div>
-                    <div class="text-[11px] text-slate-400 font-semibold">إجمالي اصناف التأمين المختاره </div>
+                    <div class="text-[11px] text-slate-400 font-semibold">إجمالي سلة التأمين</div>
                     <div class="text-lg font-bold text-emerald-400 font-mono leading-none mt-0.5">
                         <span id="cart-total-price">0.00</span> <span class="text-xs font-normal text-slate-300">ج.م</span>
                     </div>
@@ -192,6 +192,20 @@
             loadExcelFromStorage(); 
             refreshAllAppData();    
         });
+
+        // 🔄 إعادة تحميل التطبيق بالكامل وتجاوز الكاش
+        function forceFullAppRefresh() {
+            const btnIcon = document.getElementById('btn-refresh-icon');
+            const btnText = document.getElementById('btn-refresh-text');
+            if (btnIcon) btnIcon.className = "fa-solid fa-rotate fa-spin text-xs";
+            if (btnText) btnText.innerText = "جاري تحديث التطبيق...";
+
+            // إضافة Timestamp لمنع المتصفح من استخدام الكاش وإجباره على التحديث
+            setTimeout(() => {
+                const currentUrl = window.location.href.split('?')[0];
+                window.location.href = currentUrl + '?v=' + Date.now();
+            }, 300);
+        }
 
         async function fetchCsvDataMobile(url) {
             const res = await fetch(url + '&t=' + Date.now(), { cache: "no-store" });
@@ -291,7 +305,7 @@
                             <span class="truncate">${message}</span>
                         </div>
                         <div class="flex items-center gap-1 shrink-0">
-                            <button onclick="refreshAllAppData()" class="bg-black/10 p-1 rounded-lg" title="إعادة تنشيط"><i class="fa-solid fa-rotate text-xs"></i></button>
+                            <button onclick="forceFullAppRefresh()" class="bg-black/10 p-1 rounded-lg" title="إعادة تنشيط"><i class="fa-solid fa-rotate text-xs"></i></button>
                             <button onclick="dismissNotificationBanner()" class="bg-black/10 p-1 rounded-lg" title="إخفاء"><i class="fa-solid fa-xmark text-xs"></i></button>
                         </div>
                     </div>
