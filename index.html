@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>برنامج صرف أسعار أدوية التأمين</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Cairo Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Cairo', sans-serif; background-color: #f8fafc; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col relative pb-32">
+
+    <!-- Restore Notification Button -->
+    <div id="restore-notif-btn-container" class="hidden fixed top-3 left-4 z-50">
+        <button onclick="restoreNotificationBanner()" class="bg-slate-900/90 text-amber-400 font-bold px-3 py-1.5 rounded-xl text-xs shadow-lg border border-slate-700/50 flex items-center gap-2">
+            <i class="fa-solid fa-bell text-xs animate-pulse"></i>
+            <span>إظهار الإشعار</span>
+        </button>
+    </div>
+
+    <!-- Notification & Update Banners Container -->
+    <div id="banners-stack-container" class="flex flex-col w-full">
+        <div id="update-banner-container"></div>
+        <div id="notification-banner-container"></div>
+    </div>
+
+    <!-- Header / Navbar -->
+    <header class="bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-md py-4 px-4 sm:px-6">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div class="flex items-center gap-3">
+                <div class="bg-white text-emerald-600 p-2 rounded-xl shadow-inner">
+                    <i class="fa-solid fa-file-invoice-dollar text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg sm:text-2xl font-bold tracking-wide">برنامج أسعار أدوية التأمين</h1>
+                    <p class="text-[11px] text-emerald-100 mt-0.5">محرك البحث بالمزامنة المباشرة</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-center">
+                <div class="bg-black/15 py-1.5 px-3 rounded-xl backdrop-blur-sm text-xs sm:text-sm">
+                    إجمالي الأصناف: <span id="total-count" class="font-bold text-emerald-200 font-mono">0</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-3 sm:p-6 space-y-4">
+        
+        <!-- Master Control Box -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div class="flex items-center gap-3 w-full sm:w-auto">
+                <div class="bg-emerald-50 text-emerald-600 p-2.5 rounded-xl border border-emerald-100 shrink-0">
+                    <i class="fa-solid fa-rotate-solid text-lg" id="sync-icon"></i>
+                </div>
+                <div>
+                    <h2 class="text-sm font-bold text-slate-700">حالة المزامنة السحابية</h2>
+                    <p class="text-[11px] text-slate-500 mt-0.5" id="global-sync-status">
+                        <i class="fa-solid fa-sync fa-spin text-emerald-500 mr-1"></i> جاري جلب ملف التكوين والمزامنة...
+                    </p>
+                </div>
+            </div>
+            
+            <button onclick="refreshAllAppData()" class="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md flex items-center justify-center gap-2 shrink-0">
+                <i class="fa-solid fa-rotate text-xs"></i>
+                <span>تحديث المزامنة</span>
+            </button>
+        </div>
+
+        <!-- Smart Search Box -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+            <div class="max-w-2xl mx-auto text-center">
+                <label for="search-input" class="block text-xs font-bold text-slate-700 mb-2">البحث الذكي (اكتب اسم الصنف فوراً)</label>
+                <div class="relative">
+                    <input type="text" id="search-input" oninput="performSearch()" placeholder="ابحث باسم الصنف..." class="w-full pl-8 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white text-sm font-bold text-center">
+                    <i class="fa-solid fa-magnifying-glass absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Master Data Table Section -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex justify-between items-center gap-2">
+                <h3 class="font-bold text-slate-700 text-xs flex items-center gap-2">
+                    <i class="fa-solid fa-list text-emerald-500"></i>
+                    <span id="table-title">نتائج البحث</span>
+                </h3>
+                <span class="text-[11px] bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded-full" id="table-badge-count">في انتظار البحث...</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-right border-collapse">
+                    <thead>
+                        <tr class="bg-slate-100/60 text-slate-600 text-[11px] font-bold uppercase tracking-wider border-b border-slate-100">
+                            <th class="py-2.5 px-3 text-center text-emerald-800 bg-emerald-100/60">سعر التأمين</th>
+                            <th class="py-2.5 px-3">الصنف</th>
+                            <th class="py-2.5 px-3">المورد</th>
+                            <th class="py-2.5 px-3 text-center">السعر الأساسي</th>
+                            <th class="py-2.5 px-3 text-center">إضافة</th>
+                        </tr>
+                    </thead>
+                    <tbody id="medicines-table-body" class="divide-y divide-slate-100 text-xs">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- 🛒 Floating Cart Bar (الشريط العائم لسلة المشتريات) -->
+    <div id="cart-floating-bar" class="fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md text-white shadow-2xl border-t border-slate-800 transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+            
+            <div class="flex items-center gap-3 cursor-pointer" onclick="toggleCartDetails()">
+                <div class="relative bg-emerald-600 p-2.5 rounded-xl text-white shadow-lg">
+                    <i class="fa-solid fa-cart-shopping text-base"></i>
+                    <span id="cart-count-badge" class="absolute -top-1.5 -right-1.5 bg-amber-500 text-slate-900 text-[10px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center border-2 border-slate-900">0</span>
+                </div>
+                <div>
+                    <div class="text-[11px] text-slate-400 font-semibold">إجمالي سلة التأمين</div>
+                    <div class="text-lg font-bold text-emerald-400 font-mono leading-none mt-0.5">
+                        <span id="cart-total-price">0.00</span> <span class="text-xs font-normal text-slate-300">ج.م</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button onclick="toggleCartDetails()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1.5 border border-slate-700 transition">
+                    <i class="fa-solid fa-list-check text-xs text-emerald-400"></i>
+                    <span id="cart-toggle-btn-text">عرض التفاصيل</span>
+                </button>
+                <button onclick="clearCart()" class="bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-bold p-2 rounded-xl transition" title="إفرغ السلة">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Cart Expanded Items Drawer (قائمة الأصناف المضافة) -->
+        <div id="cart-drawer-items" class="hidden max-h-60 overflow-y-auto border-t border-slate-800 bg-slate-950/90 p-3 space-y-2 divide-y divide-slate-800/60">
+            <!-- ستظهر العناصر هنا ديناميكياً -->
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 py-3 px-4 text-center text-[10px] mt-auto">
+        <p>© 2026 برنامج صرف أسعار أدوية التأمين - المزامنة السحابية الديناميكية</p>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        const CONFIG_HUB_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRe_c7Ve8yAFVHY46vrUbelO5RPwjqHDF1zzFoOvJEUMnzazQjiGLU-NHpz3hIqE_WE_mE-u0VhdMRi/pub?output=csv';
+
+        let dynamicUrls = {
+            master: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSANlOsydWElQiXKcEiF90K8lzZ9wdejRxyoIAQg_gTPffIEoQDHtqV8xhRv9WKUA/pub?output=csv',
+            bundles: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRezYUjJN5SyY2KzoDGTddiH3cFsR2JWNGXpYfXE29CxJT8HvZMgTRDRiKJod4zgw/pub?gid=1549205643&single=true&output=csv',
+            notification: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRe_c7Ve8yAFVHY46vrUbelO5RPwjqHDF1zzFoOvJEUMnzazQjiGLU-NHpz3hIqE_WE_mE-u0VhdMRi/pub?output=csv'
+        };
+
+        let excelData = [];      
+        let onlineBundlesData = [];
+        let combinedData = [];   
+        let shoppingCart = []; // السلة
+        let lastMessageVal = '';
+        let lastDateVal = '';
+
+        const globalSyncStatus = document.getElementById('global-sync-status');
+        const syncIcon = document.getElementById('sync-icon');
+        const searchInput = document.getElementById('search-input');
+        const tableBody = document.getElementById('medicines-table-body');
+        const totalCountSpan = document.getElementById('total-count');
+        const tableBadgeCount = document.getElementById('table-badge-count');
+        const restoreNotifBtn = document.getElementById('restore-notif-btn-container');
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadExcelFromStorage(); 
+            refreshAllAppData();    
+        });
+
+        async function fetchCsvDataMobile(url) {
+            const res = await fetch(url + '&t=' + Date.now(), { cache: "no-store" });
+            if (!res.ok) throw new Error("فشل الاتصال بالشبكة");
+            return await res.text();
+        }
+
+        async function fetchConfigHub() {
+            try {
+                const rawCsv = await fetchCsvDataMobile(CONFIG_HUB_CSV_URL);
+                if (!rawCsv) return;
+
+                const lines = rawCsv.split(/\r?\n/).map(r => r.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/));
+                
+                lines.forEach(row => {
+                    if (row.length >= 2) {
+                        const key = row[0].replace(/^"|"$/g, '').trim().toLowerCase();
+                        const url = row[1].replace(/^"|"$/g, '').trim();
+
+                        if (url.startsWith('http')) {
+                            if (key.includes('master') || key.includes('أساسي') || key.includes('الرئيسي')) dynamicUrls.master = url;
+                            if (key.includes('bundle') || key.includes('حزم') || key.includes('حزمة')) dynamicUrls.bundles = url;
+                            if (key.includes('notif') || key.includes('إشعار') || key.includes('تحديث')) dynamicUrls.notification = url;
+                        }
+                    }
+                });
+            } catch (err) {
+                console.warn("استخدام الروابط المحلية الافتراضية:", err);
+            }
+        }
+
+        async function refreshAllAppData() {
+            try {
+                if (syncIcon) syncIcon.className = "fa-solid fa-rotate fa-spin text-lg";
+                globalSyncStatus.innerHTML = `<span class="text-amber-600"><i class="fa-solid fa-sync fa-spin mr-1"></i> جاري تحديث الروابط والداتا...</span>`;
+
+                await fetchConfigHub();
+
+                await Promise.all([
+                    fetchLiveNotification(),
+                    fetchOnlineMasterExcelData(),
+                    fetchOnlineBundlesData()
+                ]);
+
+                if (syncIcon) syncIcon.className = "fa-solid fa-cloud-check text-lg text-emerald-600";
+                globalSyncStatus.innerHTML = `<span class="text-emerald-700 font-bold"><i class="fa-solid fa-circle-check mr-1"></i> تم المزامنة وتحديث الروابط بنجاح!</span>`;
+
+            } catch (err) {
+                console.warn("خطأ في المزامنة:", err);
+                if (syncIcon) syncIcon.className = "fa-solid fa-database text-lg text-slate-500";
+                globalSyncStatus.innerHTML = `<span class="text-slate-600 font-bold"><i class="fa-solid fa-database mr-1"></i> نعمل بالنسخة المحفوظة أوفلاين.</span>`;
+            }
+        }
+
+        async function fetchLiveNotification() {
+            try {
+                const rawCsv = await fetchCsvDataMobile(dynamicUrls.notification);
+                if (!rawCsv) return;
+
+                const rows = rawCsv.split(/\r?\n/).map(r => r.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/));
+
+                if (rows.length >= 6) {
+                    const row6 = rows[5];
+                    const versionA6 = row6[0] ? row6[0].replace(/^"|"$/g, '').trim() : '';
+                    const contentB6 = row6[1] ? row6[1].replace(/^"|"$/g, '').trim() : '';
+
+                    const isNoUpdate = !contentB6 || contentB6.toLowerCase() === 'no update' || contentB6.includes('مفيش') || contentB6.includes('لا يوجد');
+
+                    if (!isNoUpdate && contentB6 !== '') {
+                        renderUpdateBanner(versionA6, contentB6);
+                    }
+                }
+
+                if (rows.length > 0) {
+                    const firstRow = rows[0];
+                    lastDateVal = firstRow[0] ? firstRow[0].replace(/^"|"$/g, '').trim() : '';
+                    lastMessageVal = firstRow[1] ? firstRow[1].replace(/^"|"$/g, '').trim() : '';
+
+                    if (lastMessageVal !== '' && !lastMessageVal.toLowerCase().includes('no update')) {
+                        if (restoreNotifBtn.classList.contains('hidden')) {
+                            renderNotificationBanner(lastMessageVal, lastDateVal);
+                        }
+                    }
+                }
+            } catch (err) { console.warn(err); }
+        }
+
+        function renderNotificationBanner(message, dateStr) {
+            const container = document.getElementById('notification-banner-container');
+            if (!container) return;
+
+            container.innerHTML = `
+                <div id="live-notif-banner" class="bg-gradient-to-r from-amber-500 to-amber-600 text-slate-900 px-3 py-2 shadow-md flex items-center justify-between transition-all">
+                    <div class="w-full flex items-center justify-between gap-2 text-xs font-bold">
+                        <div class="flex items-center gap-1.5 overflow-hidden">
+                            <i class="fa-solid fa-bell text-xs animate-bounce shrink-0"></i>
+                            <span class="truncate">${message}</span>
+                        </div>
+                        <div class="flex items-center gap-1 shrink-0">
+                            <button onclick="refreshAllAppData()" class="bg-black/10 p-1 rounded-lg" title="إعادة تنشيط"><i class="fa-solid fa-rotate text-xs"></i></button>
+                            <button onclick="dismissNotificationBanner()" class="bg-black/10 p-1 rounded-lg" title="إخفاء"><i class="fa-solid fa-xmark text-xs"></i></button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function dismissNotificationBanner() {
+            const banner = document.getElementById('live-notif-banner');
+            if (banner) banner.remove();
+            if (restoreNotifBtn) restoreNotifBtn.classList.remove('hidden');
+        }
+
+        function restoreNotificationBanner() {
+            if (lastMessageVal) renderNotificationBanner(lastMessageVal, lastDateVal);
+            if (restoreNotifBtn) restoreNotifBtn.classList.add('hidden');
+        }
+
+        function renderUpdateBanner(version, linkOrMessage) {
+            const container = document.getElementById('update-banner-container');
+            if (!container) return;
+            const isUrl = linkOrMessage.startsWith('http://') || linkOrMessage.startsWith('https://');
+
+            container.innerHTML = `
+                <div id="live-update-banner" class="bg-emerald-700 text-white px-3 py-2 shadow-md flex items-center justify-between text-xs font-bold">
+                    <span class="truncate">🚀 تحديث جديد ${version ? `(${version})` : ''}</span>
+                    <div class="flex items-center gap-2 shrink-0">
+                        ${isUrl ? `<button onclick="window.open('${linkOrMessage}', '_system')" class="bg-slate-900 px-2.5 py-1 rounded-lg text-[11px] text-emerald-400 font-bold">تحميل</button>` : ''}
+                        <button onclick="document.getElementById('live-update-banner').remove()" class="p-1"><i class="fa-solid fa-xmark text-xs"></i></button>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function fetchOnlineMasterExcelData() {
+            try {
+                const csvText = await fetchCsvDataMobile(dynamicUrls.master);
+                const workbook = XLSX.read(csvText, { type: 'string' });
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rawJson = XLSX.utils.sheet_to_json(worksheet);
+
+                if (rawJson.length > 0) {
+                    excelData = rawJson.map((row, idx) => {
+                        const keys = Object.keys(row);
+                        const supplierKey = keys.find(k => k.trim() === 'المورد');
+                        const itemKey = keys.find(k => k.trim() === 'الصنف');
+                        const priceKey = keys.find(k => k.trim() === 'سعر الوحده' || k.trim() === 'سعر الوحدة');
+
+                        if (!supplierKey || !itemKey || !priceKey) return null;
+
+                        const rawName = String(row[itemKey]).trim();
+                        const cleanedName = cleanItemName(rawName);
+                        const unitPrice = parseFloat(row[priceKey]) || 0;
+                        
+                        return {
+                            id: 'm_' + idx,
+                            supplier: String(row[supplierKey]).trim(),
+                            item: cleanedName,
+                            unitPrice: unitPrice,
+                            insurancePrice: parseFloat((unitPrice * 1.07).toFixed(2)),
+                            tNumber: extractTNumber(cleanedName), 
+                            source: 'الأساسي'
+                        };
+                    }).filter(item => item !== null);
+
+                    saveExcelToStorage(excelData); 
+                    compileCombinedData();
+                }
+            } catch (err) { console.warn(err); }
+        }
+
+        async function fetchOnlineBundlesData() {
+            try {
+                const csvText = await fetchCsvDataMobile(dynamicUrls.bundles);
+                const workbook = XLSX.read(csvText, { type: 'string' });
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rawJson = XLSX.utils.sheet_to_json(worksheet);
+
+                if (rawJson.length > 0) {
+                    onlineBundlesData = [];
+                    rawJson.forEach((row, idx) => {
+                        const supplier = row["المورد"] ? String(row["المورد"]).trim() : "عام";
+                        const item = row["الصنف"] ? cleanItemName(String(row["الصنف"]).trim()) : "";
+                        const price = parseFloat(row["سعر التأمين النهائي المطلوب"] || row["سعر التأمين النهائي"] || row["السعر"]) || 0;
+                        const bundleName = row["اسم المجموعة (الحزمة)"] || row["اسم الحزمة"] || "حزمة";
+
+                        if (price > 0 && item !== '') {
+                            onlineBundlesData.push({
+                                id: 'b_' + idx,
+                                supplier: supplier,
+                                item: item,
+                                unitPrice: 0,
+                                insurancePrice: price,
+                                tNumber: extractTNumber(item),
+                                source: `حزمة: ${bundleName}`
+                            });
+                        }
+                    });
+
+                    compileCombinedData();
+                }
+            } catch (err) { console.warn(err); }
+        }
+
+        function compileCombinedData() {
+            combinedData = [...excelData, ...onlineBundlesData];
+            combinedData.sort((a, b) => b.insurancePrice !== a.insurancePrice ? b.insurancePrice - a.insurancePrice : b.tNumber - a.tNumber);
+            totalCountSpan.innerText = combinedData.length;
+
+            if (searchInput.value.trim() !== '') performSearch();
+            else renderData([]); 
+        }
+
+        function renderData(dataToRender, isSearching = false) {
+            tableBody.innerHTML = '';
+            
+            if (dataToRender.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-slate-400 font-bold text-xs">${isSearching ? 'لا توجد نتائج!' : 'ابدأ بالبحث عن صنف...'}</td></tr>`;
+                tableBadgeCount.innerText = isSearching ? "0 نتيجة" : "في انتظار البحث...";
+                return;
+            }
+
+            dataToRender.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50 transition-colors';
+                
+                tr.innerHTML = `
+                    <td class="py-2.5 px-3 text-center font-bold text-emerald-700 bg-emerald-50/50 font-mono text-sm border-l border-slate-100">${row.insurancePrice.toFixed(2)}</td>
+                    <td class="py-2.5 px-3 font-bold text-slate-900 whitespace-normal">${row.item}</td>
+                    <td class="py-2.5 px-3 font-semibold text-slate-600 text-[11px]">${row.supplier}</td>
+                    <td class="py-2.5 px-3 text-center font-mono text-slate-400 text-[11px]">${row.unitPrice ? row.unitPrice.toFixed(2) : '-'}</td>
+                    <td class="py-2.5 px-3 text-center">
+                        <button onclick="addToCart('${row.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold p-1.5 rounded-lg text-xs shadow-sm transition active:scale-95">
+                            <i class="fa-solid fa-cart-plus"></i>
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+
+            tableBadgeCount.innerText = `عدد النتائج: ${dataToRender.length}`;
+        }
+
+        /* 🛒 منطق سلة المشتريات (Cart Logic) */
+        function addToCart(itemId) {
+            const itemObj = combinedData.find(i => i.id === itemId);
+            if (!itemObj) return;
+
+            const existingCartItem = shoppingCart.find(i => i.id === itemId);
+            if (existingCartItem) {
+                existingCartItem.qty += 1;
+            } else {
+                shoppingCart.push({ ...itemObj, qty: 1 });
+            }
+
+            updateCartUI();
+        }
+
+        function updateQuantity(itemId, delta) {
+            const cartItem = shoppingCart.find(i => i.id === itemId);
+            if (!cartItem) return;
+
+            cartItem.qty += delta;
+            if (cartItem.qty <= 0) {
+                shoppingCart = shoppingCart.filter(i => i.id !== itemId);
+            }
+
+            updateCartUI();
+        }
+
+        function clearCart() {
+            shoppingCart = [];
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            const countBadge = document.getElementById('cart-count-badge');
+            const totalPriceSpan = document.getElementById('cart-total-price');
+            const drawer = document.getElementById('cart-drawer-items');
+
+            let totalQty = 0;
+            let grandInsuranceTotal = 0;
+
+            drawer.innerHTML = '';
+
+            if (shoppingCart.length === 0) {
+                drawer.innerHTML = `<div class="text-center text-slate-500 text-xs py-3">السلة فارغة حالياً</div>`;
+            } else {
+                shoppingCart.forEach(item => {
+                    totalQty += item.qty;
+                    const itemTotalInsurance = item.insurancePrice * item.qty;
+                    grandInsuranceTotal += itemTotalInsurance;
+
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'flex items-center justify-between text-xs pt-2 first:pt-0';
+                    itemDiv.innerHTML = `
+                        <div class="overflow-hidden pl-2">
+                            <div class="font-bold text-slate-200 truncate">${item.item}</div>
+                            <div class="text-[10px] text-slate-400 font-mono">${item.insurancePrice.toFixed(2)} × ${item.qty} = <span class="text-emerald-400 font-bold">${itemTotalInsurance.toFixed(2)} ج.م</span></div>
+                        </div>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <button onclick="updateQuantity('${item.id}', -1)" class="bg-slate-800 text-slate-300 w-6 h-6 rounded flex items-center justify-center font-bold text-xs hover:bg-slate-700">-</button>
+                            <span class="font-bold text-slate-100 font-mono w-4 text-center">${item.qty}</span>
+                            <button onclick="updateQuantity('${item.id}', 1)" class="bg-emerald-600 text-white w-6 h-6 rounded flex items-center justify-center font-bold text-xs hover:bg-emerald-500">+</button>
+                        </div>
+                    `;
+                    drawer.appendChild(itemDiv);
+                });
+            }
+
+            countBadge.innerText = totalQty;
+            totalPriceSpan.innerText = grandInsuranceTotal.toFixed(2);
+        }
+
+        function toggleCartDetails() {
+            const drawer = document.getElementById('cart-drawer-items');
+            const btnText = document.getElementById('cart-toggle-btn-text');
+
+            if (drawer.classList.contains('hidden')) {
+                drawer.classList.remove('hidden');
+                btnText.innerText = 'إخفاء التفاصيل';
+            } else {
+                drawer.classList.add('hidden');
+                btnText.innerText = 'عرض التفاصيل';
+            }
+        }
+
+        function performSearch() {
+            const query = searchInput.value.trim();
+            if (!query) { renderData([], false); return; }
+
+            const results = [];
+            const drugCountMap = {}; 
+            const queryBase = getBaseDrugName(query);
+            const exactMatches = combinedData.filter(row => getBaseDrugName(row.item) === queryBase);
+
+            if (exactMatches.length > 0) {
+                exactMatches.sort((a, b) => b.insurancePrice - a.insurancePrice);
+                renderData(exactMatches.slice(0, 5), true);
+                return;
+            }
+
+            for (const row of combinedData) {
+                if (fuzzyMatch(query, row["item"])) {
+                    const baseName = getBaseDrugName(row.item);
+                    const currentCount = drugCountMap[baseName] || 0;
+                    if (currentCount < 2) {
+                        results.push(row);
+                        drugCountMap[baseName] = currentCount + 1;
+                    }
+                    if (results.length >= 10) break;
+                }
+            }
+            renderData(results, true);
+        }
+
+        function fuzzyMatch(input, target) {
+            const normalize = str => str.toLowerCase().replace(/[\u064B-\u0652\s\-ـ_،.(){}\[\]<>]/g, '').normalize("NFD").replace(/[^\u0600-\u06FF\w]/g, '');
+            const a = normalize(input);
+            const b = normalize(target);
+            return (!a || !b) ? false : b.includes(a);
+        }
+
+        function cleanItemName(name) {
+            if (!name) return '';
+            let cleaned = name.replace(/\s*\(+[\w\s\/\-\.]*UPA[\w\s\/\-\.]*\)+\s*/gi, ' ');
+            cleaned = cleaned.replace(/\s*\(+\d+[\s\/\-]*\d*\)+\s*/g, ' ');
+            return cleaned.replace(/\s+/g, ' ').trim();
+        }
+
+        function extractTNumber(name) {
+            if (!name) return 0;
+            const match = name.match(/t(\d+)/i);
+            return match ? parseInt(match[1], 10) : 0;
+        }
+
+        function getBaseDrugName(name) {
+            if (!name) return '';
+            return name.toLowerCase().replace(/t\d+/g, '').replace(/\s+/g, ' ').trim();
+        }
+
+        function saveExcelToStorage(data) {
+            try { localStorage.setItem('cached_excel_data_mobile_v2', JSON.stringify(data)); } catch (e) {}
+        }
+
+        function loadExcelFromStorage() {
+            const storedExcel = localStorage.getItem('cached_excel_data_mobile_v2');
+            if (storedExcel) {
+                try { excelData = JSON.parse(storedExcel); compileCombinedData(); } catch (e) { excelData = []; }
+            }
+        }
+    </script>
+</body>
+</html>
