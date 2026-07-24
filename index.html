@@ -26,9 +26,13 @@
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        
+        /* 📌 تثبيت هيدر الجدول (Sticky Table Header) */
+        .table-container { max-h: 65vh; overflow-y: auto; }
+        .sticky-header th { position: sticky; top: 0; z-index: 10; }
     </style>
 </head>
-<body class="min-h-screen text-slate-800 flex flex-col relative pb-32">
+<body class="min-h-screen text-slate-800 flex flex-col relative pb-44">
 
     <!-- Restore Notification Button -->
     <div id="restore-notif-btn-container" class="hidden fixed top-3 left-4 z-50">
@@ -53,7 +57,7 @@
                 </div>
                 <div>
                     <h1 class="text-lg sm:text-2xl font-bold tracking-wide">برنامج أسعار أدوية التأمين</h1>
-                    <p class="text-[11px] text-emerald-100 mt-0.5"> البحث بالمزامنة المباشرة</p>
+                    <p class="text-[11px] text-emerald-100 mt-0.5">محرك البحث بالمزامنة المباشرة</p>
                 </div>
             </div>
             <div class="flex items-center gap-3 w-full sm:w-auto justify-center">
@@ -83,7 +87,7 @@
             
             <button onclick="forceFullAppRefresh()" class="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md flex items-center justify-center gap-2 shrink-0 active:scale-95 transition">
                 <i class="fa-solid fa-rotate text-xs" id="btn-refresh-icon"></i>
-                <span id="btn-refresh-text">تحديث المزامنة والكود </span>
+                <span id="btn-refresh-text">تحديث المزامنة والكود</span>
             </button>
         </div>
 
@@ -98,7 +102,7 @@
             </div>
         </div>
 
-        <!-- Master Data Table Section -->
+        <!-- Master Data Table Section with Sticky Header -->
         <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
             <div class="px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex justify-between items-center gap-2">
                 <h3 class="font-bold text-slate-700 text-xs flex items-center gap-2">
@@ -107,15 +111,17 @@
                 </h3>
                 <span class="text-[11px] bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded-full" id="table-badge-count">في انتظار البحث...</span>
             </div>
-            <div class="overflow-x-auto">
+            
+            <!-- Table Container with Scroll & Frozen Th -->
+            <div class="overflow-x-auto table-container">
                 <table class="w-full text-right border-collapse">
                     <thead>
-                        <tr class="bg-slate-100/60 text-slate-600 text-[11px] font-bold uppercase tracking-wider border-b border-slate-100">
-                            <th class="py-2.5 px-3 text-center text-emerald-800 bg-emerald-100/60">سعر التأمين</th>
-                            <th class="py-2.5 px-3">الصنف</th>
-                            <th class="py-2.5 px-3">المورد</th>
-                            <th class="py-2.5 px-3 text-center">السعر الأساسي</th>
-                            <th class="py-2.5 px-3 text-center">إضافة</th>
+                        <tr class="sticky-header bg-slate-100 text-slate-700 text-[11px] font-bold uppercase tracking-wider border-b border-slate-200 shadow-sm">
+                            <th class="py-3 px-3 text-center text-emerald-900 bg-emerald-100/90 backdrop-blur-sm">سعر التأمين</th>
+                            <th class="py-3 px-3 bg-slate-100/90 backdrop-blur-sm">الصنف</th>
+                            <th class="py-3 px-3 bg-slate-100/90 backdrop-blur-sm">المورد</th>
+                            <th class="py-3 px-3 text-center bg-slate-100/90 backdrop-blur-sm">السعر الأساسي</th>
+                            <th class="py-3 px-3 text-center bg-slate-100/90 backdrop-blur-sm">إضافة</th>
                         </tr>
                     </thead>
                     <tbody id="medicines-table-body" class="divide-y divide-slate-100 text-xs">
@@ -126,11 +132,11 @@
     </main>
 
     <!-- 🛒 Floating Cart Bar (الشريط العائم لسلة المشتريات) -->
-    <div id="cart-floating-bar" class="fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md text-white shadow-2xl border-t border-slate-800 transition-all duration-300">
-        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+    <div id="cart-floating-bar" class="fixed bottom-9 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md text-white shadow-2xl border-t border-slate-800 transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
             
             <div class="flex items-center gap-3 cursor-pointer" onclick="toggleCartDetails()">
-                <div class="relative bg-emerald-600 p-2.5 rounded-xl text-white shadow-lg">
+                <div class="relative bg-emerald-600 p-2 rounded-xl text-white shadow-lg">
                     <i class="fa-solid fa-cart-shopping text-base"></i>
                     <span id="cart-count-badge" class="absolute -top-1.5 -right-1.5 bg-amber-500 text-slate-900 text-[10px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center border-2 border-slate-900">0</span>
                 </div>
@@ -143,23 +149,23 @@
             </div>
 
             <div class="flex items-center gap-2">
-                <button onclick="toggleCartDetails()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1.5 border border-slate-700 transition">
+                <button onclick="toggleCartDetails()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 border border-slate-700 transition">
                     <i class="fa-solid fa-list-check text-xs text-emerald-400"></i>
                     <span id="cart-toggle-btn-text">عرض التفاصيل</span>
                 </button>
-                <button onclick="clearCart()" class="bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-bold p-2 rounded-xl transition" title="إفراغ السلة">
+                <button onclick="clearCart()" class="bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-bold p-1.5 rounded-xl transition" title="إفراغ السلة">
                     <i class="fa-solid fa-trash-can"></i>
                 </button>
             </div>
         </div>
 
         <!-- Cart Expanded Items Drawer -->
-        <div id="cart-drawer-items" class="hidden max-h-60 overflow-y-auto border-t border-slate-800 bg-slate-950/90 p-3 space-y-2 divide-y divide-slate-800/60">
+        <div id="cart-drawer-items" class="hidden max-h-56 overflow-y-auto border-t border-slate-800 bg-slate-950/90 p-3 space-y-2 divide-y divide-slate-800/60">
         </div>
     </div>
 
-    <!-- Footer -->
-    <footer class="bg-slate-900 text-slate-400 py-3 px-4 text-center text-[10px] mt-auto">
+    <!-- 🔻 Footer (الموجود في أسفل الشاشة تحت السلة) -->
+    <footer class="fixed bottom-0 left-0 right-0 z-50 bg-slate-950 text-slate-500 py-2 px-4 text-center text-[10px] border-t border-slate-800/80">
         <p>© 2026 برنامج صرف أسعار أدوية التأمين - المزامنة السحابية الديناميكية</p>
     </footer>
 
@@ -201,11 +207,9 @@
             if (btnText) btnText.innerText = "جاري مسح الكاش وتحديث الكود...";
 
             try {
-                // 1. مسح التخزين المؤقت المحلي
                 localStorage.clear();
                 sessionStorage.clear();
 
-                // 2. مسح ملفات الكاش الخاصة بالمتصفح إن وجدت
                 if ('caches' in window) {
                     const cacheNames = await caches.keys();
                     await Promise.all(cacheNames.map(name => caches.delete(name)));
@@ -214,7 +218,6 @@
                 console.warn("Error clearing cache:", e);
             }
 
-            // 3. إعادة تحميل الصفحة برابط جديد كلياً لمنع استخدام الكاش القديم
             setTimeout(() => {
                 const cleanUrl = window.location.href.split('?')[0];
                 window.location.replace(cleanUrl + '?hard_reload=' + Date.now() + Math.random());
