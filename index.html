@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <!-- 🚀 منع الكاش نهائياً لجلب أحدث تعديل فوراً -->
+    <!-- 🚀 منع الكاش تماماً وجلب أحدث كود فور الدخول -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -28,9 +28,25 @@
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         
         /* 📌 تثبيت هيدر الجدول (Sticky Table Header) */
-        .table-container { max-h: 65vh; overflow-y: auto; }
+        .table-container { max-height: 60vh; overflow-y: auto; }
         .sticky-header th { position: sticky; top: 0; z-index: 10; }
     </style>
+
+    <!-- ⚡ سكريبت التحديث التلقائي الفوري فور فتح التطبيق -->
+    <script>
+        (function checkForInstantUpdate() {
+            const currentSession = sessionStorage.getItem('app_session_active');
+            if (!currentSession) {
+                sessionStorage.setItem('app_session_active', 'true');
+                // لو الموبايل ساحب نسخة قديمة من الكاش في الفتحة الأولى، بيعمل تحديث سريع تلقائي فوراً
+                const urlParams = new URLSearchParams(window.location.search);
+                if (!urlParams.has('auto_sync')) {
+                    const cleanUrl = window.location.href.split('?')[0];
+                    window.location.replace(cleanUrl + '?auto_sync=' + Date.now());
+                }
+            }
+        })();
+    </script>
 </head>
 <body class="min-h-screen text-slate-800 flex flex-col relative pb-44">
 
@@ -80,14 +96,14 @@
                 <div>
                     <h2 class="text-sm font-bold text-slate-700">حالة المزامنة السحابية</h2>
                     <p class="text-[11px] text-slate-500 mt-0.5" id="global-sync-status">
-                        <i class="fa-solid fa-sync fa-spin text-emerald-500 mr-1"></i> جاري جلب ملف التكوين والمزامنة...
+                        <i class="fa-solid fa-sync fa-spin text-emerald-500 mr-1"></i> جاري المزامنة مع السيرفر...
                     </p>
                 </div>
             </div>
             
             <button onclick="forceFullAppRefresh()" class="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md flex items-center justify-center gap-2 shrink-0 active:scale-95 transition">
                 <i class="fa-solid fa-rotate text-xs" id="btn-refresh-icon"></i>
-                <span id="btn-refresh-text">تحديث المزامنة والكود</span>
+                <span id="btn-refresh-text">تحديث يدوي للمزامنة</span>
             </button>
         </div>
 
@@ -112,7 +128,6 @@
                 <span class="text-[11px] bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded-full" id="table-badge-count">في انتظار البحث...</span>
             </div>
             
-            <!-- Table Container with Scroll & Frozen Th -->
             <div class="overflow-x-auto table-container">
                 <table class="w-full text-right border-collapse">
                     <thead>
@@ -131,7 +146,7 @@
         </div>
     </main>
 
-    <!-- 🛒 Floating Cart Bar (الشريط العائم لسلة المشتريات) -->
+    <!-- 🛒 Floating Cart Bar -->
     <div id="cart-floating-bar" class="fixed bottom-9 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md text-white shadow-2xl border-t border-slate-800 transition-all duration-300">
         <div class="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
             
@@ -164,7 +179,7 @@
         </div>
     </div>
 
-    <!-- 🔻 Footer (الموجود في أسفل الشاشة تحت السلة) -->
+    <!-- 🔻 Footer -->
     <footer class="fixed bottom-0 left-0 right-0 z-50 bg-slate-950 text-slate-500 py-2 px-4 text-center text-[10px] border-t border-slate-800/80">
         <p>© 2026 برنامج صرف أسعار أدوية التأمين - المزامنة السحابية الديناميكية</p>
     </footer>
@@ -199,12 +214,11 @@
             refreshAllAppData();    
         });
 
-        // 🚀 تنظيف الكاش كلياً وإجبار المتصفح والـ WebView على جلب الكود الجديد من السيرفر
         async function forceFullAppRefresh() {
             const btnIcon = document.getElementById('btn-refresh-icon');
             const btnText = document.getElementById('btn-refresh-text');
             if (btnIcon) btnIcon.className = "fa-solid fa-rotate fa-spin text-xs";
-            if (btnText) btnText.innerText = "جاري مسح الكاش وتحديث الكود...";
+            if (btnText) btnText.innerText = "جاري التحديث...";
 
             try {
                 localStorage.clear();
@@ -214,14 +228,12 @@
                     const cacheNames = await caches.keys();
                     await Promise.all(cacheNames.map(name => caches.delete(name)));
                 }
-            } catch (e) {
-                console.warn("Error clearing cache:", e);
-            }
+            } catch (e) { console.warn(e); }
 
             setTimeout(() => {
                 const cleanUrl = window.location.href.split('?')[0];
-                window.location.replace(cleanUrl + '?hard_reload=' + Date.now() + Math.random());
-            }, 400);
+                window.location.replace(cleanUrl + '?force_reload=' + Date.now());
+            }, 300);
         }
 
         async function fetchCsvDataMobile(url) {
@@ -249,15 +261,13 @@
                         }
                     }
                 });
-            } catch (err) {
-                console.warn("استخدام الروابط المحلية الافتراضية:", err);
-            }
+            } catch (err) { console.warn(err); }
         }
 
         async function refreshAllAppData() {
             try {
                 if (syncIcon) syncIcon.className = "fa-solid fa-rotate fa-spin text-lg";
-                globalSyncStatus.innerHTML = `<span class="text-amber-600"><i class="fa-solid fa-sync fa-spin mr-1"></i> جاري تحديث الروابط والداتا...</span>`;
+                globalSyncStatus.innerHTML = `<span class="text-amber-600"><i class="fa-solid fa-sync fa-spin mr-1"></i> جاري تحديث البيانات...</span>`;
 
                 await fetchConfigHub();
 
@@ -268,12 +278,12 @@
                 ]);
 
                 if (syncIcon) syncIcon.className = "fa-solid fa-cloud-check text-lg text-emerald-600";
-                globalSyncStatus.innerHTML = `<span class="text-emerald-700 font-bold"><i class="fa-solid fa-circle-check mr-1"></i> تم المزامنة وتحديث الروابط بنجاح!</span>`;
+                globalSyncStatus.innerHTML = `<span class="text-emerald-700 font-bold"><i class="fa-solid fa-circle-check mr-1"></i> تم المزامنة بنجاح!</span>`;
 
             } catch (err) {
-                console.warn("خطأ في المزامنة:", err);
+                console.warn(err);
                 if (syncIcon) syncIcon.className = "fa-solid fa-database text-lg text-slate-500";
-                globalSyncStatus.innerHTML = `<span class="text-slate-600 font-bold"><i class="fa-solid fa-database mr-1"></i> نعمل بالنسخة المحفوظة أوفلاين.</span>`;
+                globalSyncStatus.innerHTML = `<span class="text-slate-600 font-bold"><i class="fa-solid fa-database mr-1"></i> نعمل بالنسخة أوفلاين.</span>`;
             }
         }
 
@@ -322,8 +332,8 @@
                             <span class="truncate">${message}</span>
                         </div>
                         <div class="flex items-center gap-1 shrink-0">
-                            <button onclick="forceFullAppRefresh()" class="bg-black/10 p-1 rounded-lg" title="إعادة تنشيط"><i class="fa-solid fa-rotate text-xs"></i></button>
-                            <button onclick="dismissNotificationBanner()" class="bg-black/10 p-1 rounded-lg" title="إخفاء"><i class="fa-solid fa-xmark text-xs"></i></button>
+                            <button onclick="forceFullAppRefresh()" class="bg-black/10 p-1 rounded-lg"><i class="fa-solid fa-rotate text-xs"></i></button>
+                            <button onclick="dismissNotificationBanner()" class="bg-black/10 p-1 rounded-lg"><i class="fa-solid fa-xmark text-xs"></i></button>
                         </div>
                     </div>
                 </div>
