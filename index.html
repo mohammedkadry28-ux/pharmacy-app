@@ -52,8 +52,8 @@
                     <i class="fa-solid fa-file-invoice-dollar text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-lg sm:text-2xl font-bold tracking-wide">أسعار أدوية التأمين</h1>
-                    <p class="text-[11px] text-emerald-100 mt-0.5"> البحث بالمزامنة المباشرة</p>
+                    <h1 class="text-lg sm:text-2xl font-bold tracking-wide">برنامج أسعار أدوية التأمين</h1>
+                    <p class="text-[11px] text-emerald-100 mt-0.5">محرك البحث بالمزامنة المباشرة</p>
                 </div>
             </div>
             <div class="flex items-center gap-3 w-full sm:w-auto justify-center">
@@ -83,7 +83,7 @@
             
             <button onclick="forceFullAppRefresh()" class="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md flex items-center justify-center gap-2 shrink-0 active:scale-95 transition">
                 <i class="fa-solid fa-rotate text-xs" id="btn-refresh-icon"></i>
-                <span id="btn-refresh-text">تحديث المزامنة والكود</span>
+                <span id="btn-refresh-text">تحديث المزامنة والكود (تنظيف الكاش)</span>
             </button>
         </div>
 
@@ -193,18 +193,32 @@
             refreshAllAppData();    
         });
 
-        // 🔄 إعادة تحميل التطبيق بالكامل وتجاوز الكاش
-        function forceFullAppRefresh() {
+        // 🚀 تنظيف الكاش كلياً وإجبار المتصفح والـ WebView على جلب الكود الجديد من السيرفر
+        async function forceFullAppRefresh() {
             const btnIcon = document.getElementById('btn-refresh-icon');
             const btnText = document.getElementById('btn-refresh-text');
             if (btnIcon) btnIcon.className = "fa-solid fa-rotate fa-spin text-xs";
-            if (btnText) btnText.innerText = "جاري تحديث التطبيق...";
+            if (btnText) btnText.innerText = "جاري مسح الكاش وتحديث الكود...";
 
-            // إضافة Timestamp لمنع المتصفح من استخدام الكاش وإجباره على التحديث
+            try {
+                // 1. مسح التخزين المؤقت المحلي
+                localStorage.clear();
+                sessionStorage.clear();
+
+                // 2. مسح ملفات الكاش الخاصة بالمتصفح إن وجدت
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => caches.delete(name)));
+                }
+            } catch (e) {
+                console.warn("Error clearing cache:", e);
+            }
+
+            // 3. إعادة تحميل الصفحة برابط جديد كلياً لمنع استخدام الكاش القديم
             setTimeout(() => {
-                const currentUrl = window.location.href.split('?')[0];
-                window.location.href = currentUrl + '?v=' + Date.now();
-            }, 300);
+                const cleanUrl = window.location.href.split('?')[0];
+                window.location.replace(cleanUrl + '?hard_reload=' + Date.now() + Math.random());
+            }, 400);
         }
 
         async function fetchCsvDataMobile(url) {
