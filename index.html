@@ -7,107 +7,171 @@
     <link rel="icon" type="image/x-icon" href="sss.ico">
     
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
             background-color: #f4f7f6;
-            text-align: center;
+            color: #333;
         }
 
-        /* 🔔 شريط التحديث اللحظي المباشر */
-        .live-banner {
-            background-color: #10b981;
+        /* 🟢 شريط رأس البرنامج */
+        header {
+            background-color: #1e3a8a;
             color: white;
-            padding: 10px 15px;
-            font-weight: bold;
-            font-size: 14px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
+            padding: 15px 20px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
 
-        .live-dot {
-            width: 10px;
-            height: 10px;
-            background-color: #ffffff;
-            border-radius: 50%;
-            display: inline-block;
-            animation: blink 1.5s infinite;
-        }
-
-        @keyframes blink {
-            0% { opacity: 1; }
-            50% { opacity: 0.3; }
-            100% { opacity: 1; }
+        header h1 {
+            margin: 0;
+            font-size: 22px;
         }
 
         .container {
-            padding: 20px;
+            max-width: 900px;
+            margin: 25px auto;
+            padding: 0 15px;
         }
 
-        h1 {
-            color: #1f2937;
-            margin-top: 30px;
-        }
-
-        .info-card {
+        /* 📊 جدول عرض البيانات والأسعار */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
             background: white;
             border-radius: 8px;
-            padding: 20px;
-            margin: 20px auto;
-            max-width: 500px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            border-right: 5px solid #2563eb;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
         }
 
-        .info-card h3 {
-            margin-top: 0;
-            color: #1f2937;
+        .data-table th, .data-table td {
+            padding: 12px 15px;
+            text-align: right;
+            border-bottom: 1px solid #e5e7eb;
         }
 
-        .info-card p {
-            color: #4b5563;
-            font-size: 15px;
-            margin-bottom: 0;
+        .data-table th {
+            background-color: #2563eb;
+            color: white;
+            font-weight: 600;
+        }
+
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* 📍 تمييز الخلية B2 */
+        #cell-b2 {
+            font-weight: bold;
+            color: #059669;
+            background-color: #ecfdf5;
+        }
+
+        /* 🔔 منطقة الإشعارات */
+        .notification-box {
+            display: none;
+            background-color: #3b82f6;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-weight: 500;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        /* 🔘 أزرار العمليات */
+        .actions-btn {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .actions-btn:hover {
+            background-color: #1d4ed8;
         }
     </style>
 </head>
 <body>
 
-    <!-- 🌟 شريط التحديث التلقائي من GitHub -->
-    <div class="live-banner">
-        <span class="live-dot"></span>
-        <span>تجربة التحديث المباشر من GitHub: الكود شغال ومحدث الآن تلقائياً!</span>
-    </div>
+    <header>
+        <h1>💊 منظومة أسعار أدوية التأمين الصحي</h1>
+    </header>
 
     <div class="container">
-        <h1>💊 برنامج أسعار أدوية التأمين</h1>
 
-        <div class="info-card">
-            <h3>حالة الاتصال</h3>
-            <p id="cell-b2">آخر تحديث: جارٍ التحميل...</p>
-        </div>
+        <!-- 🔔 صندوق الإشعارات اللحظي -->
+        <div id="notification-bar" class="notification-box"></div>
+
+        <!-- 📋 جدول البيانات الرئيسي -->
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>الرمز / الخلية</th>
+                    <th>البيان / الحالة</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>الخلية A1</strong></td>
+                    <td>حالة الاتصال والمنظومة</td>
+                </tr>
+                <tr>
+                    <td><strong>الخلية B2 (تاريخ آخر تحديث)</strong></td>
+                    <td id="cell-b2">جارٍ جلب التاريخ والوقت...</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- زر لتجربة تشغيل دالة الابديت والنوتفيكيشن -->
+        <button class="actions-btn" onclick="triggerUpdateNotification('تم تحديث بيانات أسعار الأدوية بنجاح!')">
+            🔄 تحديث البيانات الآن
+        </button>
+
     </div>
 
     <script>
-        // دالة تحديث التاريخ والوقت في الخلية B2
-        function updateCellB2() {
+        // 🔔 دالة النوتفيكيشن والتحديث (اللي بتغيّر الخلية B2 أوتوماتيك)
+        function triggerUpdateNotification(message) {
+            // 1. حساب التاريخ والوقت الحالي بتنسيق واضح
             const now = new Date();
-            const formattedDate = now.toLocaleDateString('ar-EG') + ' ' + now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-            
+            const formattedDate = now.toLocaleDateString('ar-EG') + ' - ' + now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+
+            // 2. تحديث الخلية B2 بتاريخ التغيير الحالي
             const cellB2 = document.getElementById('cell-b2');
             if (cellB2) {
-                cellB2.innerText = "آخر تحديث: " + formattedDate;
+                cellB2.innerText = formattedDate;
+            }
+
+            // 3. عرض شريط الإشعار للمستخدم
+            const notifBar = document.getElementById('notification-bar');
+            if (notifBar) {
+                notifBar.innerText = "🔔 " + message + " (" + formattedDate + ")";
+                notifBar.style.display = "block";
+
+                // إخفاء الإشعار بعد 5 ثواني
+                setTimeout(() => {
+                    notifBar.style.display = "none";
+                }, 5000);
             }
         }
 
-        // تشغيل التحديث فور تحميل الواجهة
+        // تشغيل التحديث التلقائي للخلية B2 عند فتح البرنامج فوراً
         window.onload = function() {
-            updateCellB2();
+            triggerUpdateNotification("تم فتح التطبيق والاتصال ببيانات التأمين");
         };
     </script>
+
 </body>
 </html>
