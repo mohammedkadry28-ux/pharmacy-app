@@ -6,172 +6,101 @@
     <title>برنامج أسعار أدوية التأمين</title>
     <link rel="icon" type="image/x-icon" href="sss.ico">
     
+    <!-- Tailwind CSS للتنسيق -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- مكتبة SheetJS لقراءة وقراءة ملفات الاكسيل و CSV -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
     <style>
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f7f6;
-            color: #333;
-        }
-
-        /* 🟢 شريط رأس البرنامج */
-        header {
-            background-color: #1e3a8a;
-            color: white;
-            padding: 15px 20px;
-            text-align: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        }
-
-        header h1 {
-            margin: 0;
-            font-size: 22px;
-        }
-
-        .container {
-            max-width: 900px;
-            margin: 25px auto;
-            padding: 0 15px;
-        }
-
-        /* 📊 جدول عرض البيانات والأسعار */
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            margin-bottom: 20px;
-        }
-
-        .data-table th, .data-table td {
-            padding: 12px 15px;
-            text-align: right;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        .data-table th {
-            background-color: #2563eb;
-            color: white;
-            font-weight: 600;
-        }
-
-        .data-table tr:last-child td {
-            border-bottom: none;
-        }
-
-        /* 📍 تمييز الخلية B2 */
-        #cell-b2 {
-            font-weight: bold;
-            color: #059669;
-            background-color: #ecfdf5;
-        }
-
-        /* 🔔 منطقة الإشعارات */
-        .notification-box {
-            display: none;
-            background-color: #3b82f6;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            font-weight: 500;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-        }
-
-        /* 🔘 أزرار العمليات */
-        .actions-btn {
-            background-color: #2563eb;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            font-size: 14px;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .actions-btn:hover {
-            background-color: #1d4ed8;
-        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .sticky-cart { position: sticky; bottom: 20px; z-index: 50; }
     </style>
 </head>
-<body>
+<body class="bg-slate-50 min-h-screen pb-24">
 
-    <header>
-        <h1>💊 منظومة أسعار أدوية التأمين الصحي</h1>
+    <!-- 🟢 شريط النظام والعنوان -->
+    <header class="bg-blue-900 text-white p-4 shadow-lg">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold flex items-center gap-2">
+                💊 برنامج حاسبة أسعار أدوية التأمين
+            </h1>
+            <span id="cell-b2" class="text-xs bg-blue-800 px-3 py-1.5 rounded-full border border-blue-700">
+                آخر تحديث: جاري التحميل...
+            </span>
+        </div>
     </header>
 
-    <div class="container">
+    <main class="max-w-6xl mx-auto p-4 space-y-6">
 
-        <!-- 🔔 صندوق الإشعارات اللحظي -->
-        <div id="notification-bar" class="notification-box"></div>
+        <!-- 🔍 شريط البحث -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+            <label class="block text-sm font-semibold text-slate-700 mb-2">بحث عن دواء (بالاسم أو الكود):</label>
+            <input type="text" id="searchInput" oninput="searchMedicine()" 
+                   placeholder="اكتب اسم الدواء هنا..." 
+                   class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-lg">
+        </div>
 
-        <!-- 📋 جدول البيانات الرئيسي -->
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>الرمز / الخلية</th>
-                    <th>البيان / الحالة</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><strong>الخلية A1</strong></td>
-                    <td>حالة الاتصال والمنظومة</td>
-                </tr>
-                <tr>
-                    <td><strong>الخلية B2 (تاريخ آخر تحديث)</strong></td>
-                    <td id="cell-b2">جارٍ جلب التاريخ والوقت...</td>
-                </tr>
-            </tbody>
-        </table>
+        <!-- 📋 جدول عرض أدوية التأمين -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <table class="w-full text-right border-collapse">
+                <thead class="bg-slate-100 text-slate-700 text-sm border-b border-slate-200">
+                    <tr>
+                        <th class="p-3">اسم الدواء</th>
+                        <th class="p-3">السعر الأصلي</th>
+                        <th class="p-3">نسبة التأمين</th>
+                        <th class="p-3">المطلوب سداده</th>
+                        <th class="p-3 text-center">إضافة</th>
+                    </tr>
+                </thead>
+                <tbody id="medicineTable" class="divide-y divide-slate-100 text-sm">
+                    <!-- سيتم إضافة نتائج البحث هنا ديناميكياً -->
+                </tbody>
+            </table>
+        </div>
 
-        <!-- زر لتجربة تشغيل دالة الابديت والنوتفيكيشن -->
-        <button class="actions-btn" onclick="triggerUpdateNotification('تم تحديث بيانات أسعار الأدوية بنجاح!')">
-            🔄 تحديث البيانات الآن
-        </button>
+    </main>
 
+    <!-- 🛒 سلة المشتريات والنتيجة النهائية (Sticky Cart) -->
+    <div class="max-w-4xl mx-auto px-4 sticky-cart">
+        <div class="bg-slate-900 text-white p-4 rounded-2xl shadow-2xl flex justify-between items-center border border-slate-700">
+            <div>
+                <span class="text-slate-400 text-xs block">إجمالي المطلوب من المريض:</span>
+                <span id="totalPrice" class="text-2xl font-bold text-green-400">0.00 ج.م</span>
+            </div>
+            <button onclick="clearCart()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm transition">
+                إعادة ضبط / سلة جديدة
+            </button>
+        </div>
     </div>
 
     <script>
-        // 🔔 دالة النوتفيكيشن والتحديث (اللي بتغيّر الخلية B2 أوتوماتيك)
-        function triggerUpdateNotification(message) {
-            // 1. حساب التاريخ والوقت الحالي بتنسيق واضح
+        // دالة تحديث التاريخ والوقت في الخلية B2
+        function updateCellB2() {
             const now = new Date();
-            const formattedDate = now.toLocaleDateString('ar-EG') + ' - ' + now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-
-            // 2. تحديث الخلية B2 بتاريخ التغيير الحالي
+            const formattedDate = now.toLocaleDateString('ar-EG') + ' ' + now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
             const cellB2 = document.getElementById('cell-b2');
             if (cellB2) {
-                cellB2.innerText = formattedDate;
-            }
-
-            // 3. عرض شريط الإشعار للمستخدم
-            const notifBar = document.getElementById('notification-bar');
-            if (notifBar) {
-                notifBar.innerText = "🔔 " + message + " (" + formattedDate + ")";
-                notifBar.style.display = "block";
-
-                // إخفاء الإشعار بعد 5 ثواني
-                setTimeout(() => {
-                    notifBar.style.display = "none";
-                }, 5000);
+                cellB2.innerText = "آخر تحديث: " + formattedDate;
             }
         }
 
-        // تشغيل التحديث التلقائي للخلية B2 عند فتح البرنامج فوراً
+        // متغيرات الحسابات والسلة
+        let cartTotal = 0;
+
+        function addToCart(price) {
+            cartTotal += price;
+            document.getElementById('totalPrice').innerText = cartTotal.toFixed(2) + " ج.م";
+        }
+
+        function clearCart() {
+            cartTotal = 0;
+            document.getElementById('totalPrice').innerText = "0.00 ج.م";
+        }
+
+        // تشغيل التحديث فور تحميل الصفحة
         window.onload = function() {
-            triggerUpdateNotification("تم فتح التطبيق والاتصال ببيانات التأمين");
+            updateCellB2();
         };
     </script>
-
 </body>
 </html>
