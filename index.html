@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <!-- 🚀 منع الكاش تماماً وجلب أحدث كود فور الدخول -->
+    <!-- 🚀 منع الكاش نهائياً لجلب أحدث تعديل فوراً -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -28,7 +28,7 @@
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         
         /* 📌 تثبيت هيدر الجدول (Sticky Table Header) */
-        .table-container { max-height: 60vh; overflow-y: auto; }
+        .table-container { max-height: 65vh; overflow-y: auto; }
         .sticky-header th { position: sticky; top: 0; z-index: 10; }
     </style>
 
@@ -38,7 +38,6 @@
             const currentSession = sessionStorage.getItem('app_session_active');
             if (!currentSession) {
                 sessionStorage.setItem('app_session_active', 'true');
-                // لو الموبايل ساحب نسخة قديمة من الكاش في الفتحة الأولى، بيعمل تحديث سريع تلقائي فوراً
                 const urlParams = new URLSearchParams(window.location.search);
                 if (!urlParams.has('auto_sync')) {
                     const cleanUrl = window.location.href.split('?')[0];
@@ -48,7 +47,7 @@
         })();
     </script>
 </head>
-<body class="min-h-screen text-slate-800 flex flex-col relative pb-44">
+<body class="min-h-screen text-slate-800 flex flex-col relative pb-20">
 
     <!-- Restore Notification Button -->
     <div id="restore-notif-btn-container" class="hidden fixed top-3 left-4 z-50">
@@ -72,8 +71,8 @@
                     <i class="fa-solid fa-file-invoice-dollar text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-lg sm:text-2xl font-bold tracking-wide"> أسعار أدوية التأمين</h1>
-                    <p class="text-[11px] text-emerald-100 mt-0.5"> البحث بالمزامنة المباشرة</p>
+                    <h1 class="text-lg sm:text-2xl font-bold tracking-wide">برنامج أسعار أدوية التأمين</h1>
+                    <p class="text-[11px] text-emerald-100 mt-0.5">محرك البحث بالمزامنة المباشرة</p>
                 </div>
             </div>
             <div class="flex items-center gap-3 w-full sm:w-auto justify-center">
@@ -94,7 +93,7 @@
                     <i class="fa-solid fa-rotate-solid text-lg" id="sync-icon"></i>
                 </div>
                 <div>
-                    <h2 class="text-sm font-bold text-slate-700">حالة المزامنة </h2>
+                    <h2 class="text-sm font-bold text-slate-700">حالة المزامنة السحابية</h2>
                     <p class="text-[11px] text-slate-500 mt-0.5" id="global-sync-status">
                         <i class="fa-solid fa-sync fa-spin text-emerald-500 mr-1"></i> جاري المزامنة مع السيرفر...
                     </p>
@@ -136,7 +135,6 @@
                             <th class="py-3 px-3 bg-slate-100/90 backdrop-blur-sm">الصنف</th>
                             <th class="py-3 px-3 bg-slate-100/90 backdrop-blur-sm">المورد</th>
                             <th class="py-3 px-3 text-center bg-slate-100/90 backdrop-blur-sm">السعر الأساسي</th>
-                            <th class="py-3 px-3 text-center bg-slate-100/90 backdrop-blur-sm">إضافة</th>
                         </tr>
                     </thead>
                     <tbody id="medicines-table-body" class="divide-y divide-slate-100 text-xs">
@@ -146,41 +144,53 @@
         </div>
     </main>
 
-    <!-- 🛒 Floating Cart Bar -->
-    <div id="cart-floating-bar" class="fixed bottom-9 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md text-white shadow-2xl border-t border-slate-800 transition-all duration-300">
-        <div class="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
+    <!-- 🛒 Floating Cart Action Button (أيقونة السلة الدائرية المفتوحة على الشمال) -->
+    <div class="fixed bottom-10 left-4 z-40">
+        <button onclick="toggleCartModal()" class="relative bg-emerald-600 hover:bg-emerald-700 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-200 active:scale-90 border-2 border-white">
+            <i class="fa-solid fa-cart-shopping text-xl"></i>
+            <span id="cart-count-badge" class="absolute -top-1 -right-1 bg-amber-500 text-slate-900 text-[11px] font-extrabold w-6 h-6 rounded-full flex items-center justify-center border-2 border-white shadow">0</span>
+        </button>
+    </div>
+
+    <!-- 🛒 Cart Details Modal (نافذة السلة المنبثقة) -->
+    <div id="cart-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 transition-all">
+        <div class="bg-slate-900 text-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl border border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
             
-            <div class="flex items-center gap-3 cursor-pointer" onclick="toggleCartDetails()">
-                <div class="relative bg-emerald-600 p-2 rounded-xl text-white shadow-lg">
-                    <i class="fa-solid fa-cart-shopping text-base"></i>
-                    <span id="cart-count-badge" class="absolute -top-1.5 -right-1.5 bg-amber-500 text-slate-900 text-[10px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center border-2 border-slate-900">0</span>
+            <!-- Modal Header -->
+            <div class="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-basket-shopping text-emerald-400"></i>
+                    <h3 class="font-bold text-sm">سلة التأمين المفصلة</h3>
                 </div>
-                <div>
-                    <div class="text-[11px] text-slate-400 font-semibold">إجمالي سلة التأمين</div>
-                    <div class="text-lg font-bold text-emerald-400 font-mono leading-none mt-0.5">
-                        <span id="cart-total-price">0.00</span> <span class="text-xs font-normal text-slate-300">ج.م</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-2">
-                <button onclick="toggleCartDetails()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 border border-slate-700 transition">
-                    <i class="fa-solid fa-list-check text-xs text-emerald-400"></i>
-                    <span id="cart-toggle-btn-text">عرض التفاصيل</span>
-                </button>
-                <button onclick="clearCart()" class="bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-bold p-1.5 rounded-xl transition" title="إفراغ السلة">
-                    <i class="fa-solid fa-trash-can"></i>
+                <button onclick="toggleCartModal()" class="text-slate-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-base"></i>
                 </button>
             </div>
-        </div>
 
-        <!-- Cart Expanded Items Drawer -->
-        <div id="cart-drawer-items" class="hidden max-h-56 overflow-y-auto border-t border-slate-800 bg-slate-950/90 p-3 space-y-2 divide-y divide-slate-800/60">
+            <!-- Modal Items Body -->
+            <div id="cart-modal-items" class="p-4 overflow-y-auto space-y-3 divide-y divide-slate-800/80 flex-grow">
+            </div>
+
+            <!-- Modal Footer / Total -->
+            <div class="p-4 bg-slate-950 border-t border-slate-800 space-y-3">
+                <div class="flex justify-between items-center text-sm font-bold">
+                    <span class="text-slate-400">الإجمالي النهائي:</span>
+                    <span class="text-emerald-400 font-mono text-xl"><span id="cart-total-price">0.00</span> ج.م</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="clearCart()" class="w-full bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-bold py-2 px-3 rounded-xl text-xs transition flex items-center justify-center gap-2 border border-rose-500/30">
+                        <i class="fa-solid fa-trash-can"></i> إفراغ السلة
+                    </button>
+                    <button onclick="toggleCartModal()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3 rounded-xl text-xs transition">
+                        إغلاق
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- 🔻 Footer -->
-    <footer class="fixed bottom-0 left-0 right-0 z-50 bg-slate-950 text-slate-500 py-2 px-4 text-center text-[10px] border-t border-slate-800/80">
+    <footer class="bg-slate-950 text-slate-500 py-3 px-4 text-center text-[10px] border-t border-slate-800/80 mt-auto">
         <p>© 2026 برنامج صرف أسعار أدوية التأمين - المزامنة السحابية الديناميكية</p>
     </footer>
 
@@ -450,7 +460,7 @@
             tableBody.innerHTML = '';
             
             if (dataToRender.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-slate-400 font-bold text-xs">${isSearching ? 'لا توجد نتائج!' : 'ابدأ بالبحث عن صنف...'}</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-slate-400 font-bold text-xs">${isSearching ? 'لا توجد نتائج!' : 'ابدأ بالبحث عن صنف...'}</td></tr>`;
                 tableBadgeCount.innerText = isSearching ? "0 نتيجة" : "في انتظار البحث...";
                 return;
             }
@@ -460,15 +470,17 @@
                 tr.className = 'hover:bg-slate-50 transition-colors';
                 
                 tr.innerHTML = `
-                    <td class="py-2.5 px-3 text-center font-bold text-emerald-700 bg-emerald-50/50 font-mono text-sm border-l border-slate-100">${row.insurancePrice.toFixed(2)}</td>
+                    <td class="py-2.5 px-2 text-center bg-emerald-50/50 border-l border-slate-100">
+                        <div class="inline-flex items-center justify-center gap-1.5">
+                            <span class="font-bold text-emerald-700 font-mono text-sm">${row.insurancePrice.toFixed(2)}</span>
+                            <button onclick="addToCart('${row.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white w-6 h-6 rounded-md flex items-center justify-center text-xs shadow-sm active:scale-90 transition" title="إضافة للسلة">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
+                        </div>
+                    </td>
                     <td class="py-2.5 px-3 font-bold text-slate-900 whitespace-normal">${row.item}</td>
                     <td class="py-2.5 px-3 font-semibold text-slate-600 text-[11px]">${row.supplier}</td>
                     <td class="py-2.5 px-3 text-center font-mono text-slate-400 text-[11px]">${row.unitPrice ? row.unitPrice.toFixed(2) : '-'}</td>
-                    <td class="py-2.5 px-3 text-center">
-                        <button onclick="addToCart('${row.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold p-1.5 rounded-lg text-xs shadow-sm transition active:scale-95">
-                            <i class="fa-solid fa-cart-plus"></i>
-                        </button>
-                    </td>
                 `;
                 tableBody.appendChild(tr);
             });
@@ -511,15 +523,15 @@
         function updateCartUI() {
             const countBadge = document.getElementById('cart-count-badge');
             const totalPriceSpan = document.getElementById('cart-total-price');
-            const drawer = document.getElementById('cart-drawer-items');
+            const modalItems = document.getElementById('cart-modal-items');
 
             let totalQty = 0;
             let grandInsuranceTotal = 0;
 
-            drawer.innerHTML = '';
+            modalItems.innerHTML = '';
 
             if (shoppingCart.length === 0) {
-                drawer.innerHTML = `<div class="text-center text-slate-500 text-xs py-3">السلة فارغة حالياً</div>`;
+                modalItems.innerHTML = `<div class="text-center text-slate-500 text-xs py-6">السلة فارغة حالياً</div>`;
             } else {
                 shoppingCart.forEach(item => {
                     totalQty += item.qty;
@@ -539,7 +551,7 @@
                             <button onclick="updateQuantity('${item.id}', 1)" class="bg-emerald-600 text-white w-6 h-6 rounded flex items-center justify-center font-bold text-xs hover:bg-emerald-500">+</button>
                         </div>
                     `;
-                    drawer.appendChild(itemDiv);
+                    modalItems.appendChild(itemDiv);
                 });
             }
 
@@ -547,17 +559,9 @@
             totalPriceSpan.innerText = grandInsuranceTotal.toFixed(2);
         }
 
-        function toggleCartDetails() {
-            const drawer = document.getElementById('cart-drawer-items');
-            const btnText = document.getElementById('cart-toggle-btn-text');
-
-            if (drawer.classList.contains('hidden')) {
-                drawer.classList.remove('hidden');
-                btnText.innerText = 'إخفاء التفاصيل';
-            } else {
-                drawer.classList.add('hidden');
-                btnText.innerText = 'عرض التفاصيل';
-            }
+        function toggleCartModal() {
+            const modal = document.getElementById('cart-modal');
+            modal.classList.toggle('hidden');
         }
 
         function performSearch() {
