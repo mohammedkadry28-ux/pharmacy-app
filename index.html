@@ -112,13 +112,18 @@
             </button>
         </div>
 
-        <!-- Smart Search Box -->
+        <!-- Smart Search Box (معدل للتحكم المرن بالمؤشر والمسح) -->
         <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
             <div class="max-w-2xl mx-auto text-center">
                 <label for="search-input" class="block text-xs font-bold text-slate-700 mb-2">البحث الذكي (اكتب اسم الصنف فوراً)</label>
-                <div class="relative">
-                    <input type="text" id="search-input" oninput="performSearch()" placeholder="ابحث باسم الصنف..." class="w-full pl-8 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white text-sm font-bold text-center">
-                    <i class="fa-solid fa-magnifying-glass absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <div class="relative flex items-center">
+                    <input type="text" id="search-input" dir="auto" oninput="handleSearchInput()" placeholder="ابحث باسم الصنف..." class="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white text-sm font-bold text-right transition-all">
+                    <i class="fa-solid fa-magnifying-glass absolute right-3 text-slate-400 text-xs pointer-events-none"></i>
+                    
+                    <!-- زرار مسح الخانة السريع بلمسة واحدة -->
+                    <button id="clear-search-btn" onclick="clearSearchInput()" class="hidden absolute left-3 text-slate-400 hover:text-slate-600 bg-slate-200 hover:bg-slate-300 rounded-full w-5 h-5 flex items-center justify-center text-[10px] transition">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
                 </div>
             </div>
         </div>
@@ -192,7 +197,7 @@
         </div>
     </div>
 
-    <!-- 🔻 Footer (ملتصق بأسفل الصفحة تماماً) -->
+    <!-- 🔻 Footer -->
     <footer class="bg-slate-950 text-slate-500 py-2.5 px-4 text-center text-[10px] border-t border-slate-800/80 w-full mt-auto">
         <p>© 2026 برنامج صرف أسعار أدوية التأمين - المزامنة السحابية الديناميكية</p>
     </footer>
@@ -217,6 +222,7 @@
         const globalSyncStatus = document.getElementById('global-sync-status');
         const syncIcon = document.getElementById('sync-icon');
         const searchInput = document.getElementById('search-input');
+        const clearSearchBtn = document.getElementById('clear-search-btn');
         const tableBody = document.getElementById('medicines-table-body');
         const totalCountSpan = document.getElementById('total-count');
         const tableBadgeCount = document.getElementById('table-badge-count');
@@ -226,6 +232,22 @@
             loadExcelFromStorage(); 
             refreshAllAppData();    
         });
+
+        function handleSearchInput() {
+            if (searchInput.value.trim() !== '') {
+                clearSearchBtn.classList.remove('hidden');
+            } else {
+                clearSearchBtn.classList.add('hidden');
+            }
+            performSearch();
+        }
+
+        function clearSearchInput() {
+            searchInput.value = '';
+            clearSearchBtn.classList.add('hidden');
+            performSearch();
+            searchInput.focus();
+        }
 
         async function forceFullAppRefresh() {
             const btnIcon = document.getElementById('btn-refresh-icon');
