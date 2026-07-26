@@ -15,7 +15,7 @@
             text-align: center;
         }
 
-        /* 🔔 شريط التحديث اللحظي الجديد (تجربة GitHub) */
+        /* 🔔 شريط التحديث اللحظي المباشر */
         .live-banner {
             background-color: #10b981;
             color: white;
@@ -50,22 +50,34 @@
 
         h1 {
             color: #1f2937;
+            margin-top: 30px;
         }
 
         .info-card {
             background: white;
             border-radius: 8px;
-            padding: 15px;
+            padding: 20px;
             margin: 20px auto;
             max-width: 500px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
             border-right: 5px solid #2563eb;
         }
+
+        .info-card h3 {
+            margin-top: 0;
+            color: #1f2937;
+        }
+
+        .info-card p {
+            color: #4b5563;
+            font-size: 15px;
+            margin-bottom: 0;
+        }
     </style>
 </head>
 <body>
 
-    <!-- 🌟 شريط التحديث التلقائي (التعديل الجديد) -->
+    <!-- 🌟 شريط التحديث التلقائي من GitHub -->
     <div class="live-banner">
         <span class="live-dot"></span>
         <span>تجربة التحديث المباشر من GitHub: الكود شغال ومحدث الآن تلقائياً!</span>
@@ -76,12 +88,12 @@
 
         <div class="info-card">
             <h3>حالة الاتصال</h3>
-            <p id="cell-b2">آخر تحديث للبيانات: جارٍ التحميل...</p>
+            <p id="cell-b2">آخر تحديث: جارٍ التحميل...</p>
         </div>
     </div>
 
     <script>
-        // دالة تحديث الخلية B2 بالتاريخ الحالي
+        // دالة تحديث التاريخ والوقت في الخلية B2
         function updateCellB2() {
             const now = new Date();
             const formattedDate = now.toLocaleDateString('ar-EG') + ' ' + now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
@@ -92,7 +104,7 @@
             }
         }
 
-        // تشغيل التحديث فور فتح الصفحة
+        // تشغيل التحديث فور تحميل الواجهة
         window.onload = function() {
             updateCellB2();
         };
