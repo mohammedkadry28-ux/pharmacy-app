@@ -186,7 +186,7 @@
             <div class="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <i class="fa-solid fa-basket-shopping text-emerald-400"></i>
-                    <h3 class="font-bold text-sm">سلة التأمين المفصلة</h3>
+                    <h3 class="font-bold text-sm">إجمالى فاتورة التأمين</h3>
                 </div>
                 <button onclick="toggleCartModal()" class="text-slate-400 hover:text-white p-1">
                     <i class="fa-solid fa-xmark text-base"></i>
@@ -203,7 +203,7 @@
                 </div>
                 <div class="flex items-center gap-2">
                     <button onclick="clearCart()" class="w-full bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-bold py-2 px-3 rounded-xl text-xs transition flex items-center justify-center gap-2 border border-rose-500/30">
-                        <i class="fa-solid fa-trash-can"></i> إفراغ السلة
+                        <i class="fa-solid fa-trash-can"></i> إفراغ الفاتورة
                     </button>
                     <button onclick="toggleCartModal()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3 rounded-xl text-xs transition">
                         إغلاق
@@ -575,7 +575,7 @@
             modalItems.innerHTML = '';
 
             if (shoppingCart.length === 0) {
-                modalItems.innerHTML = `<div class="text-center text-slate-500 text-xs py-6">السلة فارغة حالياً</div>`;
+                modalItems.innerHTML = `<div class="text-center text-slate-500 text-xs py-6">الفاتورة فارغة حاليا</div>`;
             } else {
                 shoppingCart.forEach(item => {
                     totalQty += item.qty;
