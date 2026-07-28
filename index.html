@@ -186,7 +186,7 @@
             <div class="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <i class="fa-solid fa-basket-shopping text-emerald-400"></i>
-                    <h3 class="font-bold text-sm">إجمالى فاتورة التأمين</h3>
+                    <h3 class="font-bold text-sm">سلة التأمين المفصلة</h3>
                 </div>
                 <button onclick="toggleCartModal()" class="text-slate-400 hover:text-white p-1">
                     <i class="fa-solid fa-xmark text-base"></i>
@@ -203,7 +203,7 @@
                 </div>
                 <div class="flex items-center gap-2">
                     <button onclick="clearCart()" class="w-full bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-bold py-2 px-3 rounded-xl text-xs transition flex items-center justify-center gap-2 border border-rose-500/30">
-                        <i class="fa-solid fa-trash-can"></i> إفراغ الفاتورة
+                        <i class="fa-solid fa-trash-can"></i> إفراغ السلة
                     </button>
                     <button onclick="toggleCartModal()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-3 rounded-xl text-xs transition">
                         إغلاق
@@ -575,7 +575,7 @@
             modalItems.innerHTML = '';
 
             if (shoppingCart.length === 0) {
-                modalItems.innerHTML = `<div class="text-center text-slate-500 text-xs py-6">الفاتورة فارغة حاليا</div>`;
+                modalItems.innerHTML = `<div class="text-center text-slate-500 text-xs py-6">السلة فارغة حالياً</div>`;
             } else {
                 shoppingCart.forEach(item => {
                     totalQty += item.qty;
@@ -608,6 +608,46 @@
             modal.classList.toggle('hidden');
         }
 
+        /* 🔍 محرك البحث المطور لاستخراج الكلمات المفتاحية فقط */
+        function extractSearchableText(itemName) {
+            if (!itemName) return '';
+
+            let searchableParts = [];
+
+            // 1. استخراج الكلمات الموجودة داخل الأقواس المربعة [...]
+            const squareBracketMatches = itemName.match(/\[(.*?)\]/g);
+            if (squareBracketMatches) {
+                squareBracketMatches.forEach(match => {
+                    let content = match.replace(/[\[\]]/g, '');
+                    searchableParts.push(content);
+                });
+            }
+
+            // 2. استخراج النص الواقع بين / و - (أو قبل أول - لو مفيش /)
+            let slashDashMatch = itemName.match(/\/(.*?)(?=-|$)/);
+            if (!slashDashMatch) {
+                slashDashMatch = itemName.match(/^(.*?)(?=-|$)/);
+            }
+
+            if (slashDashMatch && slashDashMatch[1]) {
+                let part = slashDashMatch[1].trim();
+                part = part.replace(/\(.*?\)/g, ''); // إزالة الأقواس العادية (...)
+                searchableParts.push(part);
+            }
+
+            let finalSearchableText = searchableParts.join(' ').trim();
+
+            // 3. الخطة البديلة (Fallback): لو الاسم مفيش فيه النمط ده، بنرجع الاسم الأصلي كاملاً
+            if (!finalSearchableText) {
+                return itemName;
+            }
+
+            // تنظيف الكلمات الوصفية الشائعة
+            finalSearchableText = finalSearchableText.replace(/\b(syringe|prefilled syringe|vial|solvent|ampoule|amp|tab|cap)\b/gi, '');
+
+            return finalSearchableText.trim();
+        }
+
         function performSearch() {
             const query = searchInput.value.trim();
             if (!query) { renderData([], false); return; }
@@ -615,7 +655,12 @@
             const results = [];
             const drugCountMap = {}; 
             const queryBase = getBaseDrugName(query);
-            const exactMatches = combinedData.filter(row => getBaseDrugName(row.item) === queryBase);
+
+            // 1. مطابقة دقيقة أولاً
+            const exactMatches = combinedData.filter(row => {
+                const searchableText = extractSearchableText(row.item);
+                return getBaseDrugName(searchableText) === queryBase || getBaseDrugName(row.item) === queryBase;
+            });
 
             if (exactMatches.length > 0) {
                 exactMatches.sort((a, b) => b.insurancePrice - a.insurancePrice);
@@ -623,8 +668,11 @@
                 return;
             }
 
+            // 2. مطابقة ذكية (Fuzzy Search)
             for (const row of combinedData) {
-                if (fuzzyMatch(query, row["item"])) {
+                const searchableText = extractSearchableText(row.item);
+
+                if (fuzzyMatch(query, searchableText) || fuzzyMatch(query, row["item"])) {
                     const baseName = getBaseDrugName(row.item);
                     const currentCount = drugCountMap[baseName] || 0;
                     if (currentCount < 2) {
