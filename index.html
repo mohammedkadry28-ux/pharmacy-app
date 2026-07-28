@@ -244,7 +244,7 @@
         let shoppingCart = []; 
         let lastMessageVal = '';
         let lastDateVal = '';
-        let showExtraInfo = false; // حالة إظهار العمودين الإضافيين
+        let showExtraInfo = false;
 
         const globalSyncStatus = document.getElementById('global-sync-status');
         const syncIcon = document.getElementById('sync-icon');
@@ -477,7 +477,8 @@
                             unitPrice: unitPrice,
                             insurancePrice: parseFloat((unitPrice * 1.07).toFixed(2)),
                             tNumber: extractTNumber(cleanedName), 
-                            source: 'الأساسي'
+                            source: 'الأساسي',
+                            isBundle: false // تمييز الصنف الأساسي
                         };
                     }).filter(item => item !== null);
 
@@ -510,7 +511,8 @@
                                 unitPrice: 0,
                                 insurancePrice: price,
                                 tNumber: extractTNumber(item),
-                                source: `حزمة: ${bundleName}`
+                                source: `حزمة: ${bundleName}`,
+                                isBundle: true // تمييز صنف الحزمة
                             });
                         }
                     });
@@ -521,8 +523,8 @@
         }
 
         function compileCombinedData() {
-            combinedData = [...excelData, ...onlineBundlesData];
-            combinedData.sort((a, b) => b.insurancePrice !== a.insurancePrice ? b.insurancePrice - a.insurancePrice : b.tNumber - a.tNumber);
+            // 🌟 ترتيب البيانات بحيث تظهر الحزم أوتوماتيكياً قبل ملف الإكسيل الأساسي
+            combinedData = [...onlineBundlesData, ...excelData];
             totalCountSpan.innerText = combinedData.length;
 
             if (searchInput.value.trim() !== '') performSearch();
@@ -552,8 +554,10 @@
                             </button>
                         </div>
                     </td>
-                    <td class="py-2.5 px-3 font-bold text-slate-900 whitespace-normal">${row.item}</td>
-                    <!-- 🙈 خليهم مخفيين حسب حالة showExtraInfo -->
+                    <td class="py-2.5 px-3 font-bold text-slate-900 whitespace-normal">
+                        ${row.isBundle ? '<span class="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-1.5 py-0.5 rounded ml-1 border border-amber-200 shadow-xs">حزمة</span>' : ''}
+                        ${row.item}
+                    </td>
                     <td class="extra-col ${showExtraInfo ? '' : 'hidden'} py-2.5 px-3 font-semibold text-slate-600 text-[11px]">${row.supplier}</td>
                     <td class="extra-col ${showExtraInfo ? '' : 'hidden'} py-2.5 px-3 text-center font-mono text-slate-400 text-[11px]">${row.unitPrice ? row.unitPrice.toFixed(2) : '-'}</td>
                 `;
@@ -645,7 +649,6 @@
 
             let searchableParts = [];
 
-            // 1. استخراج الكلمات الموجودة داخل الأقواس المربعة [...]
             const squareBracketMatches = itemName.match(/\[(.*?)\]/g);
             if (squareBracketMatches) {
                 squareBracketMatches.forEach(match => {
@@ -654,7 +657,6 @@
                 });
             }
 
-            // 2. استخراج النص الواقع بين / و - (أو قبل أول - لو مفيش /)
             let slashDashMatch = itemName.match(/\/(.*?)(?=-|$)/);
             if (!slashDashMatch) {
                 slashDashMatch = itemName.match(/^(.*?)(?=-|$)/);
@@ -662,44 +664,47 @@
 
             if (slashDashMatch && slashDashMatch[1]) {
                 let part = slashDashMatch[1].trim();
-                part = part.replace(/\(.*?\)/g, ''); // إزالة الأقواس العادية (...)
+                part = part.replace(/\(.*?\)/g, '');
                 searchableParts.push(part);
             }
 
             let finalSearchableText = searchableParts.join(' ').trim();
 
-            // 3. الخطة البديلة (Fallback): لو الاسم مفيش فيه النمط ده، بنرجع الاسم الأصلي كاملاً
             if (!finalSearchableText) {
                 return itemName;
             }
 
-            // تنظيف الكلمات الوصفية الشائعة
             finalSearchableText = finalSearchableText.replace(/\b(syringe|prefilled syringe|vial|solvent|ampoule|amp|tab|cap)\b/gi, '');
 
             return finalSearchableText.trim();
         }
 
+        /* 🔍 دالة البحث وتطبيق أولوية الحزم على الأصناف الأساسية */
         function performSearch() {
             const query = searchInput.value.trim();
             if (!query) { renderData([], false); return; }
 
-            const results = [];
             const drugCountMap = {}; 
             const queryBase = getBaseDrugName(query);
 
-            // 1. مطابقة دقيقة أولاً
+            // 1. مطابقة دقيقة
             const exactMatches = combinedData.filter(row => {
                 const searchableText = extractSearchableText(row.item);
                 return getBaseDrugName(searchableText) === queryBase || getBaseDrugName(row.item) === queryBase;
             });
 
             if (exactMatches.length > 0) {
-                exactMatches.sort((a, b) => b.insurancePrice - a.insurancePrice);
+                // الفرز: إعطاء الأولوية للحزم أولاً ثم الترتيب بالسعر الأعلى
+                exactMatches.sort((a, b) => {
+                    if (a.isBundle !== b.isBundle) return b.isBundle ? 1 : -1;
+                    return b.insurancePrice - a.insurancePrice;
+                });
                 renderData(exactMatches.slice(0, 5), true);
                 return;
             }
 
             // 2. مطابقة ذكية (Fuzzy Search)
+            let rawResults = [];
             for (const row of combinedData) {
                 const searchableText = extractSearchableText(row.item);
 
@@ -707,13 +712,19 @@
                     const baseName = getBaseDrugName(row.item);
                     const currentCount = drugCountMap[baseName] || 0;
                     if (currentCount < 2) {
-                        results.push(row);
+                        rawResults.push(row);
                         drugCountMap[baseName] = currentCount + 1;
                     }
-                    if (results.length >= 10) break;
                 }
             }
-            renderData(results, true);
+
+            // 🌟 فرز نتائج البحث الذكي لإعطاء أولوية ظهور أصناف الحزم
+            rawResults.sort((a, b) => {
+                if (a.isBundle !== b.isBundle) return b.isBundle ? 1 : -1;
+                return b.insurancePrice - a.insurancePrice;
+            });
+
+            renderData(rawResults.slice(0, 10), true);
         }
 
         function fuzzyMatch(input, target) {
